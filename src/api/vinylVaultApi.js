@@ -2,9 +2,7 @@
 
 // src/api/vinylVaultApi.js
 
-// Use a more generic backend URL for auth, as /albums is only for albums.
-const BASE_URL = process.env.REACT_APP_BACK_END_SERVER_URL; 
-// Note: We use the full URL in the auth functions below.
+const BASE_URL = process.env.REACT_APP_BACK_END_SERVER_URL;
 
 
 // --- API Service Functions ---
@@ -17,21 +15,26 @@ const BASE_URL = process.env.REACT_APP_BACK_END_SERVER_URL;
 const signIn = async (credentials) => {
   try {
     const res = await fetch(
-      `${BASE_URL}/auth/signin`,
+      `${BASE_URL}/auth/sign-in`,
       buildOptions(credentials, 'POST')
     );
     
     // Check if the response was successful
     if (res.ok) {
-        return res.json();
+        const data = await res.json();
+        return data.token;
     }
 
-    // Parse the error body and throw a detailed error
-    const errorData = await res.json();
-    throw new Error(errorData.msg || 'Sign in failed');
+    // Parse error response
+    const responseText = await res.text();
+    try {
+      const errorData = JSON.parse(responseText);
+      throw new Error(errorData.err || 'Sign in failed');
+    } catch (parseError) {
+      throw new Error(`Sign in failed with status ${res.status}`);
+    }
 
   } catch (error) {
-    console.error("Error in signIn:", error);
     throw error;
   }
 };
@@ -44,19 +47,25 @@ const signIn = async (credentials) => {
 const signUp = async (profile) => {
   try {
     const res = await fetch(
-      `${BASE_URL}/auth/signup`,
+      `${BASE_URL}/auth/sign-up`,
       buildOptions(profile, 'POST')
     );
     
     if (res.ok) {
-        return res.json();
+        const data = await res.json();
+        return data.token;
     }
     
-    const errorData = await res.json();
-    throw new Error(errorData.msg || 'Sign up failed');
+    // Parse error response
+    const responseText = await res.text();
+    try {
+      const errorData = JSON.parse(responseText);
+      throw new Error(errorData.err || 'Sign up failed');
+    } catch (parseError) {
+      throw new Error(`Sign up failed with status ${res.status}`);
+    }
 
   } catch (error) {
-    console.error("Error in signUp:", error);
     throw error;
   }
 };
@@ -74,12 +83,64 @@ const getAlbums = async () => {
     // Throw an error if the response status is not successful (e.g., 403 Forbidden)
     throw new Error('Failed to fetch albums: ' + res.statusText);
   } catch (err) {
-    console.error("Error in getAlbums:", err);
-    throw err; // Re-throw the error so AlbumIndex can catch it
+    throw err;
   }
 };
 
-// You will add other functions (createAlbum, deleteAlbum, etc.) here later...
+// Get a single album by ID
+const getAlbum = async (id) => {
+  try {
+    const res = await fetch(`${BASE_URL}/albums/${id}`, buildOptions());
+    if (res.ok) {
+      return res.json();
+    }
+    throw new Error('Failed to fetch album');
+  } catch (err) {
+    throw err;
+  }
+};
+
+// Create a new album
+const createAlbum = async (albumData) => {
+  try {
+    const res = await fetch(`${BASE_URL}/albums`, buildOptions(albumData, 'POST'));
+    if (res.ok) {
+      return res.json();
+    }
+    const errorData = await res.json();
+    throw new Error(errorData.error || 'Failed to create album');
+  } catch (err) {
+    throw err;
+  }
+};
+
+// Update an album
+const updateAlbum = async (id, albumData) => {
+  try {
+    const res = await fetch(`${BASE_URL}/albums/${id}`, buildOptions(albumData, 'PUT'));
+    if (res.ok) {
+      return res.json();
+    }
+    const errorData = await res.json();
+    throw new Error(errorData.message || 'Failed to update album');
+  } catch (err) {
+    throw err;
+  }
+};
+
+// Delete an album
+const deleteAlbum = async (id) => {
+  try {
+    const res = await fetch(`${BASE_URL}/albums/${id}`, buildOptions(null, 'DELETE'));
+    if (res.ok || res.status === 204) {
+      return true;
+    }
+    const errorData = await res.json();
+    throw new Error(errorData.message || 'Failed to delete album');
+  } catch (err) {
+    throw err;
+  }
+};
 
 // --- Helper Function ---
 
@@ -100,68 +161,4 @@ function buildOptions(data, method = 'GET') {
 }
 
 
-export { getAlbums, signIn, signUp };
-
-
-
-
-
-
-// // src/api/vinylVaultApi.js
-
-// // 1. Update the BASE_URL to point to your Album backend route
-// // (Assuming your server URL is configured in your environment variables)
-// const BASE_URL = process.env.REACT_APP_BACK_END_SERVER_URL;
-
-
-// // --- API Service Functions ---
-
-
-
-
-
-
-
-
-// // Function to get all albums (Corresponds to your instructor's 'index' function)
-// const getAlbums = async () => {
-//   try {
-//     const res = await fetch(BASE_URL, buildOptions()); // GET request
-//     // IMPORTANT: fetch responses need to check for errors manually
-//     if (res.ok) {
-//         return res.json();
-//     }
-//     // Throw an error if the response status is not successful (e.g., 403 Forbidden)
-//     throw new Error('Failed to fetch albums: ' + res.statusText);
-//   } catch (err) {
-//     console.error("Error in getAlbums:", err);
-//     throw err; // Re-throw the error so AlbumIndex can catch it
-//   }
-// };
-
-// // You will add other functions (createAlbum, deleteAlbum, etc.) here later...
-
-// // --- Helper Function ---
-
-// // Replicating your instructor's buildOptions to handle the JWT token securely
-// function buildOptions(data, method = 'GET') {
-//   const options = {
-//     method,
-//     headers: {
-//       // 2. IMPORTANT: Get the token from localStorage
-//       Authorization: `Bearer ${localStorage.getItem('token')}`, 
-//       'Content-Type': 'application/json',
-//     },
-//   };
-//   // If we need to send json data with the request (POST, PUT, PATCH)
-//   if (data) {
-//     options.body = JSON.stringify(data);
-//   }
-
-//   // console.log(options); // Optional for debugging
-
-//   return options;
-// }
-
-
-// export { getAlbums, signIn, signUp};
+export { getAlbums, getAlbum, createAlbum, updateAlbum, deleteAlbum, signIn, signUp };

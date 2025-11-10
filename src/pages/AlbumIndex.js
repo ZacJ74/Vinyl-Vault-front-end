@@ -1,42 +1,107 @@
 import React, { useState, useEffect } from 'react';
-// 1. Correctly import the named function from your fetch-based API service
-import { getAlbums } from '../api/vinylVaultApi'; 
-import { useAuth } from '../contexts/AuthContext'; 
-// import AlbumCard from '../components/AlbumCard'; // Future component
+import { getAlbums, createAlbum, updateAlbum, deleteAlbum } from '../api/vinylVaultApi'; 
+import { useAuth } from '../contexts/AuthContext';
 
 function AlbumIndex() {
   const [albums, setAlbums] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-  const { isAuthenticated } = useAuth(); 
+  const [showForm, setShowForm] = useState(false);
+  const [editingAlbum, setEditingAlbum] = useState(null);
+  const [formData, setFormData] = useState({
+    title: '',
+    artist: '',
+    year: '',
+    genre: '',
+    coverImage: ''
+  });
+  const { isAuthenticated, user } = useAuth(); 
+
+  const fetchAlbums = async () => {
+    try {
+      const albumData = await getAlbums(); 
+      setAlbums(albumData); 
+      setIsLoading(false);
+      setError(null);
+    } catch (err) {
+      setError("Failed to load albums. Please ensure the server is running.");
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    // Only attempt to fetch if the user is authenticated
     if (isAuthenticated) {
-      const fetchAlbums = async () => {
-        try {
-          // 2. Correctly call the imported getAlbums function. 
-          // This function handles the network request and returns the JSON data.
-          const albumData = await getAlbums(); 
-          
-          setAlbums(albumData); 
-          setIsLoading(false);
-          setError(null);
-        } catch (err) {
-          // Error handling catches issues like network failure or 403/404 from the server
-          console.error("Failed to fetch albums:", err.message);
-          setError("Failed to load albums. Please ensure the server is running.");
-          setIsLoading(false);
-        }
-      };
-
       fetchAlbums();
     } else {
       setIsLoading(false);
-      // While PrivateRoute handles the redirect, this ensures clear state if somehow reached
       setError("You must be signed in to view albums."); 
     }
-  }, [isAuthenticated]); // Re-runs if the user signs in/out
+  }, [isAuthenticated]);
+
+  const handleOpenForm = (album = null) => {
+    if (album) {
+      setEditingAlbum(album);
+      setFormData({
+        title: album.title || '',
+        artist: album.artist || '',
+        year: album.year || '',
+        genre: album.genre || '',
+        coverImage: album.coverImage || ''
+      });
+    } else {
+      setEditingAlbum(null);
+      setFormData({
+        title: '',
+        artist: '',
+        year: '',
+        genre: '',
+        coverImage: ''
+      });
+    }
+    setShowForm(true);
+  };
+
+  const handleCloseForm = () => {
+    setShowForm(false);
+    setEditingAlbum(null);
+    setFormData({
+      title: '',
+      artist: '',
+      year: '',
+      genre: '',
+      coverImage: ''
+    });
+  };
+
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      if (editingAlbum) {
+        await updateAlbum(editingAlbum._id, formData);
+      } else {
+        await createAlbum(formData);
+      }
+      handleCloseForm();
+      fetchAlbums();
+    } catch (err) {
+      alert('Error saving album: ' + err.message);
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (window.confirm('Are you sure you want to delete this album?')) {
+      try {
+        await deleteAlbum(id);
+        fetchAlbums();
+      } catch (err) {
+        alert('Error deleting album: ' + err.message);
+      }
+    }
+  };
 
   // --- Conditional Rendering for UX ---
 
@@ -59,29 +124,110 @@ function AlbumIndex() {
     );
   }
 
-  if (albums.length === 0) {
-    return (
-      <div className="album-index">
-        <h2>Vinyl Collection</h2>
-        <p>You don't have any albums yet! Use the "Add New Album" button to get started.</p>
-      </div>
-    );
-  }
-
-  // --- Success Rendering ---
   return (
     <div className="album-index">
       <h1>My Vinyl Vault 🎶</h1>
-      <p>Total Albums: **{albums.length}**</p>
       
-      <div className="album-list">
-        {/* Map over the albums and display key details */}
-        {albums.map((album) => (
-          <div key={album._id} className="album-item">
-            **{album.title}** by {album.artist} ({album.year})
-          </div>
-        ))}
-      </div>
+      <button onClick={() => handleOpenForm()} className="btn-add">Add New Album</button>
+
+      {showForm && (
+        <div className="album-form-container">
+          <form onSubmit={handleSubmit} className="album-form">
+            <h3>{editingAlbum ? 'Edit Album' : 'Add New Album'}</h3>
+            
+            <div className="form-group">
+              <label htmlFor="title">Title:</label>
+              <input
+                type="text"
+                id="title"
+                name="title"
+                value={formData.title}
+                onChange={handleChange}
+                required
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="artist">Artist:</label>
+              <input
+                type="text"
+                id="artist"
+                name="artist"
+                value={formData.artist}
+                onChange={handleChange}
+                required
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="year">Year:</label>
+              <input
+                type="number"
+                id="year"
+                name="year"
+                value={formData.year}
+                onChange={handleChange}
+                required
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="genre">Genre:</label>
+              <input
+                type="text"
+                id="genre"
+                name="genre"
+                value={formData.genre}
+                onChange={handleChange}
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="coverImage">Cover Image URL:</label>
+              <input
+                type="url"
+                id="coverImage"
+                name="coverImage"
+                value={formData.coverImage}
+                onChange={handleChange}
+              />
+            </div>
+
+            <div className="form-actions">
+              <button type="submit">{editingAlbum ? 'Update' : 'Create'} Album</button>
+              <button type="button" onClick={handleCloseForm}>Cancel</button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {albums.length === 0 ? (
+        <p>You don't have any albums yet! Click "Add New Album" to get started.</p>
+      ) : (
+        <div className="album-list">
+          <p>Total Albums: {albums.length}</p>
+          {albums.map((album) => (
+            <div key={album._id} className="album-item">
+              {album.coverImage && (
+                <img src={album.coverImage} alt={`${album.title} cover`} className="album-cover" />
+              )}
+              <div className="album-details">
+                <h3>{album.title}</h3>
+                <p>Artist: {album.artist}</p>
+                <p>Year: {album.year}</p>
+                {album.genre && <p>Genre: {album.genre}</p>}
+              </div>
+              {/* Only show Edit/Delete to the album owner */}
+              {user?._id && album.owner && (album.owner._id === user._id || album.owner === user._id) && (
+                <div className="album-actions">
+                  <button onClick={() => handleOpenForm(album)}>Edit</button>
+                  <button onClick={() => handleDelete(album._id)}>Delete</button>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

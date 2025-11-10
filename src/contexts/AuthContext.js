@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import { signUp, signIn } from '../api/vinylVaultApi'; // <-- Import the new API functions
+import { signUp, signIn } from '../api/vinylVaultApi'; 
 
 // 1. Create the Context
 const AuthContext = createContext();
@@ -11,13 +11,26 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true); // New loading state for initial check
   
-  // NOTE: For this simple app, we rely on the username being passed during login
-  // or stored in local storage for re-hydration.
+  // Decode JWT to extract user data
   const getUserDataFromToken = (token) => {
-    // In a real app, you would securely decode the token or call a /profile endpoint.
-    // For now, we assume a username is stored in local storage for persistence.
-    const username = localStorage.getItem('username');
-    return username ? { username } : null; 
+    try {
+      // Decode the JWT (note: this doesn't verify it, just reads it)
+      const base64Url = token.split('.')[1];
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+      }).join(''));
+      
+      const decoded = JSON.parse(jsonPayload);
+      const username = localStorage.getItem('username');
+      
+      return decoded.payload ? { 
+        username: username || decoded.payload.username,
+        _id: decoded.payload._id 
+      } : null;
+    } catch (err) {
+      return null;
+    }
   };
   
   // --- Helper to save state after successful login/signup ---
@@ -25,7 +38,8 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem('token', newToken);
     localStorage.setItem('username', username);
     setToken(newToken);
-    setUser({ username }); 
+    const userData = getUserDataFromToken(newToken);
+    setUser(userData || { username }); 
   };
   
   // --- Core Authentication Functions using the API Service ---
@@ -45,10 +59,6 @@ export const AuthProvider = ({ children }) => {
       handleAuthSuccess(newToken, username);
       return true; // Success
     } catch (error) {
-      console.error(`${type} failed:`, error.message);
-      // Optional: Clear token if it was invalid or expired during a silent refresh attempt
-      // localStorage.removeItem('token'); 
-      // setToken(null);
       return false; // Failure
     } finally {
       setIsLoading(false);
