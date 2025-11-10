@@ -10,6 +10,7 @@ function CommunityPage() {
   const [reviews, setReviews] = useState({});
   const [showReviewForm, setShowReviewForm] = useState(null);
   const [reviewFormData, setReviewFormData] = useState({ content: '', rating: 5 });
+  const [searchQuery, setSearchQuery] = useState('');
   const { isAuthenticated, user } = useAuth();
 
   useEffect(() => {
@@ -26,6 +27,29 @@ function CommunityPage() {
       setIsLoading(false);
     }
   };
+
+  // Group albums by user
+  const getAlbumsByUser = () => {
+    const filtered = searchQuery
+      ? albums.filter(album => 
+          album.owner?.username?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          album.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          album.artist?.toLowerCase().includes(searchQuery.toLowerCase())
+        )
+      : albums;
+
+    const grouped = {};
+    filtered.forEach(album => {
+      const username = album.owner?.username || 'Anonymous';
+      if (!grouped[username]) {
+        grouped[username] = [];
+      }
+      grouped[username].push(album);
+    });
+    return grouped;
+  };
+
+  const albumsByUser = getAlbumsByUser();
 
   const handleToggleReviews = async (albumId) => {
     if (expandedAlbum === albumId) {
@@ -80,11 +104,34 @@ function CommunityPage() {
         </div>
       </div>
 
+      <div className="search-bar">
+        <input
+          type="text"
+          placeholder="🔍 Search by user, album, or artist..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="search-input"
+        />
+        {searchQuery && (
+          <button onClick={() => setSearchQuery('')} className="btn-clear-search">
+            ✕ Clear
+          </button>
+        )}
+      </div>
+
       {albums.length === 0 ? (
         <p>No albums in the community yet!</p>
+      ) : Object.keys(albumsByUser).length === 0 ? (
+        <p>No results found for "{searchQuery}"</p>
       ) : (
-        <div className="album-list">
-          {albums.map((album) => (
+        <div className="user-collections">
+          {Object.entries(albumsByUser).map(([username, userAlbums]) => (
+            <div key={username} className="user-collection">
+              <h2 className="user-collection-header">
+                👤 {username}'s Collection ({userAlbums.length})
+              </h2>
+              <div className="album-list">
+                {userAlbums.map((album) => (
             <div key={album._id} className="album-item">
               {album.coverImage && (
                 <img src={album.coverImage} alt={`${album.title} cover`} className="album-cover" />
@@ -184,6 +231,9 @@ function CommunityPage() {
                   </div>
                 </div>
               )}
+                </div>
+              ))}
+              </div>
             </div>
           ))}
         </div>

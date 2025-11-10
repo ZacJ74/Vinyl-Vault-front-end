@@ -254,6 +254,72 @@ button[type="button"]:hover {
   font-size: 1.1rem;
 }
 
+/* Search Bar */
+.search-bar {
+  margin-bottom: 2rem;
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.search-input {
+  flex: 1;
+  padding: 1rem;
+  border: 2px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 1rem;
+  background-color: white;
+  transition: border-color 0.3s;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+}
+
+.btn-clear-search {
+  background-color: var(--error-color);
+  border-color: var(--error-color);
+  padding: 0.9rem 1.5rem;
+  font-size: 0.95rem;
+}
+
+.btn-clear-search:hover {
+  background-color: #8b3625;
+  border-color: #8b3625;
+}
+
+/* User Collections */
+.user-collections {
+  display: flex;
+  flex-direction: column;
+  gap: 3rem;
+}
+
+.user-collection {
+  background-color: var(--card-bg);
+  padding: 2rem;
+  border-radius: 12px;
+  border: 2px solid var(--border-color);
+  box-shadow: 0 4px 12px rgba(74, 63, 53, 0.15);
+}
+
+.user-collection-header {
+  margin: 0 0 1.5rem 0;
+  padding-bottom: 1rem;
+  border-bottom: 3px solid var(--accent-color);
+  color: var(--secondary-color);
+  font-family: 'Georgia', serif;
+  font-size: 1.8rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.user-collection .album-list {
+  margin-top: 0;
+}
+
 .index-header {
   display: flex;
   justify-content: space-between;
@@ -598,6 +664,17 @@ button[type="button"]:hover {
   border-color: var(--primary-color);
 }
 
+.review-form .form-actions button[type="button"] {
+  background-color: transparent;
+  color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+.review-form .form-actions button[type="button"]:hover {
+  background-color: var(--primary-color);
+  color: var(--text-light);
+}
+
 .reviews-list {
   display: flex;
   flex-direction: column;
@@ -731,6 +808,14 @@ button[type="button"]:hover {
   }
   
   .btn-add {
+    width: 100%;
+  }
+  
+  .search-bar {
+    flex-direction: column;
+  }
+  
+  .btn-clear-search {
     width: 100%;
   }
 }
