@@ -25,7 +25,7 @@ As a music enthusiast, I wanted to create a digital space where collectors can n
 
 ## Getting Started
 
-**Deployed App:** [Live App Link - Add after deployment]
+**Deployed App:** [https://vinyl-vault-front-fcoqzg3wl-zacj74s-projects.vercel.app]
 
 **Backend Repository:** [VinylVault-backend](https://github.com/ZacJ74/Vinyl-Vault-back-end.git)
 
