@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { getAlbums, createAlbum, updateAlbum, deleteAlbum, searchAlbumArtwork, getReviewsForAlbum, createReview, deleteReview } from '../api/vinylVaultApi'; 
 import { useAuth } from '../contexts/AuthContext';
+import { useModal } from '../contexts/ModalContext';
+
 
 function AlbumIndex() {
   const [albums, setAlbums] = useState([]);
@@ -12,6 +14,7 @@ function AlbumIndex() {
   const [showReviewForm, setShowReviewForm] = useState(null);
   const [reviewFormData, setReviewFormData] = useState({ content: '', rating: 5 });
   const [editingAlbum, setEditingAlbum] = useState(null);
+  const { showAlert, showConfirm } = useModal();
   const [artworkResults, setArtworkResults] = useState([]);
   const [searchingArtwork, setSearchingArtwork] = useState(false);
   const [formData, setFormData] = useState({
